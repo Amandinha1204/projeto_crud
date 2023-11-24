@@ -1,0 +1,178 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frontend</title>
+</head>
+<body>
+  <div id="login-form">
+    <h1>Login</h1>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" autocomplete="off">
+    <br>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" autocomplete="off">
+    <br>
+    <button onclick="login()">Login</button>
+    <br>
+    <button onclick="showRegistrationForm()">Register</button>
+  </div>
+
+  <div id="registration-form" style="display: none;">
+    <h1>Register</h1>
+    <label for="newUsername">New Username:</label>
+    <input type="text" id="newUsername" name="newUsername">
+    <br>
+    <label for="newPassword">New Password:</label>
+    <input type="password" id="newPassword" name="newPassword">
+    <br>
+    <button onclick="registerUser()">Register</button>
+    <br>
+    <button onclick="showLoginForm()">Back to Login</button>
+  </div>
+
+  <div id="product-form" style="display: none;">
+    <h1>Product Registration</h1>
+    <label for="productName">Product Name:</label>
+    <input type="text" id="productName" name="productName">
+    <br>
+    <label for="productPrice">Product Price:</label>
+    <input type="text" id="productPrice" name="productPrice">
+    <br>
+    <label for="productDescription">Product Description:</label>
+    <textarea id="productDescription" name="productDescription"></textarea>
+    <br>
+    <button onclick="registerProduct()">Register Product</button>
+    <br>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    let authToken = localStorage.getItem('authToken');
+
+    function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      fetch('http://localhost:3000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.auth) {
+          authToken = data.token;
+          localStorage.setItem('authToken', authToken);
+          showProductForm();
+        } else {
+          displayResult('Authentication failed. Please check your credentials.');
+        }
+      })
+      .catch(error => {
+        console.error('Error during login:', error);
+        displayResult('An error occurred during login.');
+      });
+    }
+
+    function registerUser() {
+      const newUsername = document.getElementById('newUsername').value;
+      const newPassword = document.getElementById('newPassword').value;
+
+      fetch('http://localhost:3000/api/registerUser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: newUsername, password: newPassword }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          displayResult('Registration successful. Please login.');
+          showLoginForm();
+        } else {
+          displayResult(`Registration failed: ${data.error}`);
+        }
+      })
+      .catch(error => {
+        console.error('Error during registration:', error);
+        displayResult('An error occurred during registration.');
+      });
+    }
+
+    function registerProduct() {
+      if (!authToken) {
+        displayResult('Authentication token missing. Please login.');
+        return;
+      }
+
+      const productName = document.getElementById('productName').value;
+      const productPrice = document.getElementById('productPrice').value;
+      const productDescription = document.getElementById('productDescription').value;
+
+      fetch('http://localhost:3000/api/registerProduct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ productName, productPrice, productDescription }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Limpar os campos do formulário após o registro bem-sucedido
+          document.getElementById('productName').value = '';
+          document.getElementById('productPrice').value = '';
+          document.getElementById('productDescription').value = '';
+
+          displayResult('Product registered successfully.');
+        } else {
+          displayResult(`Failed to register product: ${data.error}`);
+        }
+      })
+      .catch(error => {
+        console.error('Error during product registration:', error);
+        displayResult('An error occurred during product registration.');
+      });
+    }
+
+    function logout() {
+      authToken = null;
+      localStorage.removeItem('authToken');
+      displayResult('Logged out successfully.');
+      showLoginForm();
+    }
+
+    function showProductForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('registration-form').style.display = 'none';
+      document.getElementById('product-form').style.display = 'block';
+    }
+
+    function showLoginForm() {
+      document.getElementById('login-form').style.display = 'block';
+      document.getElementById('registration-form').style.display = 'none';
+      document.getElementById('product-form').style.display = 'none';
+    }
+
+    function showRegistrationForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('registration-form').style.display = 'block';
+      document.getElementById('product-form').style.display = 'none';
+    }
+
+    function displayResult(message) {
+      document.getElementById('result').innerText = message;
+    }
+  </script>
+</body>
+</html>
